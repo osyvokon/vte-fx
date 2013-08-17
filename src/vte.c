@@ -60,14 +60,13 @@
 #include "vteregex.h"
 #include "vtetc.h"
 
-#ifdef HAVE_LOCALE_H
-#include <locale.h>
-#endif
-
-// TODO: #define to disable lua bindings 
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
+
+#ifdef HAVE_LOCALE_H
+#include <locale.h>
+#endif
 
 #ifndef HAVE_ROUND
 static inline double round(double x) {
@@ -5102,9 +5101,11 @@ _vte_check_cursor_blink(VteTerminal *terminal)
 static lua_State *
 _vte_load_lua_script(const char *filename)
 {
-    lua_State *L = luaL_newstate();
+    lua_State *L;
+    int status;
+    L = luaL_newstate();
     luaL_openlibs(L); /* Load Lua libraries */
-    int status = luaL_loadfile(L, filename);
+    status = luaL_loadfile(L, filename);
 
     if (status) {
         fprintf(stderr, "Couldn't load file: %s\n", lua_tostring(L, -1));
@@ -13631,7 +13632,7 @@ vte_terminal_set_cursor_blinks_internal(VteTerminal *terminal, gboolean blink, c
 
     if (strcmp(animation_filename, "") ) {
         printf("About to Load script: %s \n", animation_filename);
-        _vte_load_lua_script(animation_filename);
+        pvt->cursor_animation_lua = _vte_load_lua_script(animation_filename);
     }
 
 	_vte_check_cursor_blink (terminal);

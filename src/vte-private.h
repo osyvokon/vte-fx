@@ -50,6 +50,7 @@
 #include "ring.h"
 #include "caps.h"
 
+struct lua_State; // FIXME: for some reason #include <vte.h> doesn't work here :(
 G_BEGIN_DECLS
 
 #define VTE_TAB_WIDTH			8
@@ -288,6 +289,7 @@ struct _VteTerminalPrivate {
 	/* Cursor blinking. */
         VteTerminalCursorBlinkMode cursor_blink_mode;
     char *cursor_animation_filename;  /* lua script to animate cursor */
+    struct lua_State *cursor_animation_lua;  /* lua instance for cursor animation */
 	gboolean cursor_blink_state;
 	guint cursor_blink_tag;           /* cursor blinking timeout ID */
         gint cursor_blink_cycle;          /* gtk-cursor-blink-time / 2 */
