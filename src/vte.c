@@ -140,7 +140,7 @@ static void vte_terminal_add_process_timeout (VteTerminal *terminal);
 static void add_update_timeout (VteTerminal *terminal);
 static void remove_update_timeout (VteTerminal *terminal);
 static void reset_update_regions (VteTerminal *terminal);
-static void vte_terminal_set_cursor_blinks_internal(VteTerminal *terminal, gboolean blink);
+static void vte_terminal_set_cursor_blinks_internal(VteTerminal *terminal, gboolean blink, char *animation_filename);
 static void vte_terminal_set_font_full_internal(VteTerminal *terminal,
                                                 const PangoFontDescription *font_desc,
                                                 VteTerminalAntiAlias antialias);
@@ -8805,7 +8805,7 @@ vte_terminal_sync_settings (GtkSettings *settings,
         pvt->cursor_blink_timeout = blink_timeout;
 
         if (pvt->cursor_blink_mode == VTE_CURSOR_BLINK_SYSTEM)
-                vte_terminal_set_cursor_blinks_internal(terminal, blink);
+                vte_terminal_set_cursor_blinks_internal(terminal, blink, "");
 }
 
 static void
@@ -13595,7 +13595,7 @@ vte_terminal_get_using_xft(VteTerminal *terminal)
 }
 
 static void
-vte_terminal_set_cursor_blinks_internal(VteTerminal *terminal, gboolean blink)
+vte_terminal_set_cursor_blinks_internal(VteTerminal *terminal, gboolean blink, char *animation_filename)
 {
         VteTerminalPrivate *pvt = terminal->pvt;
 
@@ -13604,6 +13604,8 @@ vte_terminal_set_cursor_blinks_internal(VteTerminal *terminal, gboolean blink)
 		return;
 
 	pvt->cursor_blinks = blink;
+    pvt->cursor_animation_filename = strdup(animation_filename);     // FIXME : small memory leak
+    printf("%s\n", animation_filename);
 	_vte_check_cursor_blink (terminal);
 }
 
@@ -13637,6 +13639,7 @@ vte_terminal_set_cursor_blink_mode(VteTerminal *terminal, VteTerminalCursorBlink
 {
         VteTerminalPrivate *pvt;
         gboolean blinks;
+        char animation_filename[512]; // FIXME
 
 	g_return_if_fail(VTE_IS_TERMINAL(terminal));
         pvt = terminal->pvt;
@@ -13654,13 +13657,19 @@ vte_terminal_set_cursor_blink_mode(VteTerminal *terminal, VteTerminalCursorBlink
             break;
           case VTE_CURSOR_BLINK_ON:
             blinks = TRUE;
+            strcpy(animation_filename, "");
             break;
           case VTE_CURSOR_BLINK_OFF:
             blinks = FALSE;
+            strcpy(animation_filename, "");
+            break;
+          case VTE_CURSOR_BLINK_SCRIPTED:
+            blinks = TRUE;
+            strcpy(animation_filename, "cursor.lua");   // TODO: should be customizable
             break;
         }
 
-        vte_terminal_set_cursor_blinks_internal(terminal, blinks);
+        vte_terminal_set_cursor_blinks_internal(terminal, blinks, animation_filename);
 
         g_object_notify(G_OBJECT(terminal), "cursor-blink-mode");
 }

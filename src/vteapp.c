@@ -656,7 +656,7 @@ main(int argc, char **argv)
 		{
 			"cursor-blink", 0, 0,
 			G_OPTION_ARG_STRING, &cursor_blink_mode_string,
-			"Cursor blink mode (system|on|off)", "MODE"
+			"Cursor blink mode (system|on|off|scripted)", "MODE"
 		},
 		{
 			"color-cursor", 'r', 0,

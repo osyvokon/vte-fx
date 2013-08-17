@@ -217,7 +217,8 @@ typedef enum {
 typedef enum {
         VTE_CURSOR_BLINK_SYSTEM,
         VTE_CURSOR_BLINK_ON,
-        VTE_CURSOR_BLINK_OFF
+        VTE_CURSOR_BLINK_OFF,
+        VTE_CURSOR_BLINK_SCRIPTED
 } VteTerminalCursorBlinkMode;
 
 /**
