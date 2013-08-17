@@ -150,6 +150,9 @@ static void vte_terminal_set_font_full_internal(VteTerminal *terminal,
                                                 VteTerminalAntiAlias antialias);
 static void _vte_check_cursor_blink(VteTerminal *terminal);
 static lua_State * _vte_load_lua_script(const char *filename);
+static void vte_terminal_render_sciptable_cursor(VteTerminal *terminal,
+                                                 guint t,
+                                                 VteRegionRectangle rect);
 
 static gboolean process_timeout (gpointer data);
 static gboolean update_timeout (gpointer data);
@@ -461,6 +464,9 @@ _vte_invalidate_cells(VteTerminal *terminal,
 	_vte_debug_print (VTE_DEBUG_UPDATES,
 			"Invalidating pixels at (%d,%d)x(%d,%d).\n",
 			rect.x, rect.y, rect.width, rect.height);
+
+    static int t = 0;
+    vte_terminal_render_sciptable_cursor(terminal, ++t, rect);
 
 	if (terminal->pvt->active != NULL) {
 		terminal->pvt->update_regions = g_slist_prepend (
@@ -9349,6 +9355,28 @@ vte_terminal_draw_rectangle(VteTerminal *terminal,
                                  y + terminal->pvt->inner_border.top,
 				 width, height,
 				 color, VTE_DRAW_OPAQUE);
+}
+
+
+static void
+vte_terminal_render_sciptable_cursor(VteTerminal *terminal,
+                guint t,
+                VteRegionRectangle rect)
+{
+    cairo_t *cr = _vte_draw_get_context (terminal->pvt->draw);
+    lua_State *L = terminal->pvt->cursor_animation_lua;
+    lua_getglobal(L, "render");
+    //Canvas_push(L, c);
+    lua_pushinteger(L, t);
+    lua_pushinteger(L, rect.x);
+    lua_pushinteger(L, rect.y);
+    lua_pushinteger(L, rect.width);
+    lua_pushinteger(L, rect.height);
+    lua_call(L, 5, 1);
+    int res = lua_tonumber(L, -1);  // Returned value
+    lua_pop(L, 1);  /* Take the returned value out of the stack */
+
+    return res;
 }
 
 /* Draw the graphic representation of a line-drawing or special graphics
