@@ -64,6 +64,11 @@
 #include <locale.h>
 #endif
 
+// TODO: #define to disable lua bindings 
+#include <lua.h>
+#include <lauxlib.h>
+#include <lualib.h>
+
 #ifndef HAVE_ROUND
 static inline double round(double x) {
 	if(x - floor(x) < 0.5) {
@@ -140,11 +145,12 @@ static void vte_terminal_add_process_timeout (VteTerminal *terminal);
 static void add_update_timeout (VteTerminal *terminal);
 static void remove_update_timeout (VteTerminal *terminal);
 static void reset_update_regions (VteTerminal *terminal);
-static void vte_terminal_set_cursor_blinks_internal(VteTerminal *terminal, gboolean blink, char *animation_filename);
+static void vte_terminal_set_cursor_blinks_internal(VteTerminal *terminal, gboolean blink, const char *animation_filename);
 static void vte_terminal_set_font_full_internal(VteTerminal *terminal,
                                                 const PangoFontDescription *font_desc,
                                                 VteTerminalAntiAlias antialias);
 static void _vte_check_cursor_blink(VteTerminal *terminal);
+static lua_State * _vte_load_lua_script(const char *filename);
 
 static gboolean process_timeout (gpointer data);
 static gboolean update_timeout (gpointer data);
@@ -5090,6 +5096,23 @@ _vte_check_cursor_blink(VteTerminal *terminal)
 		add_cursor_timeout(terminal);
 	else
 		remove_cursor_timeout(terminal);
+}
+
+/* Initialize Lua interpreter with script loaded from `filename`. */
+static lua_State *
+_vte_load_lua_script(const char *filename)
+{
+    lua_State *L = luaL_newstate();
+    luaL_openlibs(L); /* Load Lua libraries */
+    int status = luaL_loadfile(L, filename);
+
+    if (status) {
+        fprintf(stderr, "Couldn't load file: %s\n", lua_tostring(L, -1));
+        exit(1);
+    }
+    lua_pcall(L, 0, 0, 0);
+
+    return L;
 }
 
 void
@@ -13595,7 +13618,7 @@ vte_terminal_get_using_xft(VteTerminal *terminal)
 }
 
 static void
-vte_terminal_set_cursor_blinks_internal(VteTerminal *terminal, gboolean blink, char *animation_filename)
+vte_terminal_set_cursor_blinks_internal(VteTerminal *terminal, gboolean blink, const char *animation_filename)
 {
         VteTerminalPrivate *pvt = terminal->pvt;
 
@@ -13605,7 +13628,12 @@ vte_terminal_set_cursor_blinks_internal(VteTerminal *terminal, gboolean blink, c
 
 	pvt->cursor_blinks = blink;
     pvt->cursor_animation_filename = strdup(animation_filename);     // FIXME : small memory leak
-    printf("%s\n", animation_filename);
+
+    if (strcmp(animation_filename, "") ) {
+        printf("About to Load script: %s \n", animation_filename);
+        _vte_load_lua_script(animation_filename);
+    }
+
 	_vte_check_cursor_blink (terminal);
 }
 
