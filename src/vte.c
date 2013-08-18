@@ -8810,8 +8810,10 @@ vte_terminal_sync_settings (GtkSettings *settings,
                          "Cursor blinking settings setting: blink=%d time=%d timeout=%d\n",
                          blink, blink_time, blink_timeout);
 
-        pvt->cursor_blink_cycle = blink_time / 2;
-        pvt->cursor_blink_timeout = blink_timeout;
+        if (pvt->cursor_blink_mode != VTE_CURSOR_BLINK_SCRIPTED) {
+            pvt->cursor_blink_cycle = blink_time / 2;
+            pvt->cursor_blink_timeout = blink_timeout;
+        }
 
         if (pvt->cursor_blink_mode == VTE_CURSOR_BLINK_SYSTEM)
                 vte_terminal_set_cursor_blinks_internal(terminal, blink, "");
