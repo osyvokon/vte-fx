@@ -4,8 +4,8 @@ function render (Canvas, t, x, y, w, h)
     local r = 0
     local g = 1 - k * k;
     local b = 0
-    print (t)
-    c:set_color(0, 0, g, 0.8)
+    c:set_color(0, 0, g, 0.5)
     c:rectangle(x, y, w, h)
-    return 13
+    --c:rectangle(x+1, y+1, w-2, h-2)
+    return 30
 end

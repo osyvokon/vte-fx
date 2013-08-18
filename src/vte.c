@@ -150,7 +150,7 @@ static void vte_terminal_set_font_full_internal(VteTerminal *terminal,
                                                 const PangoFontDescription *font_desc,
                                                 VteTerminalAntiAlias antialias);
 static void _vte_check_cursor_blink(VteTerminal *terminal);
-static void vte_terminal_render_sciptable_cursor(VteTerminal *terminal,
+static int vte_terminal_render_sciptable_cursor(VteTerminal *terminal,
                                                  guint t,
                                                  VteRegionRectangle rect);
 
@@ -791,7 +791,8 @@ vte_invalidate_cursor_periodic (VteTerminal *terminal)
 {
         VteTerminalPrivate *pvt = terminal->pvt;
 
-	pvt->cursor_blink_state = !pvt->cursor_blink_state;
+    gboolean scripted = pvt->cursor_blink_mode == VTE_CURSOR_BLINK_SCRIPTED;
+	pvt->cursor_blink_state = !pvt->cursor_blink_state || scripted;
 	pvt->cursor_blink_time += pvt->cursor_blink_cycle;
 
 	_vte_invalidate_cursor_once(terminal, TRUE);
@@ -9336,7 +9337,7 @@ vte_terminal_draw_rectangle(VteTerminal *terminal,
 }
 
 
-static void
+static int
 vte_terminal_render_sciptable_cursor(VteTerminal *terminal,
                 guint t,
                 VteRegionRectangle rect)
@@ -10905,6 +10906,7 @@ vte_terminal_paint_cursor(VteTerminal *terminal)
 	VteScreen *screen;
 	const VteCell *cell;
 	struct _vte_draw_text_request item;
+    int delay;
 	int row, drow, col;
 	long width, height, delta, cursor_width;
 	guint fore, back;
@@ -10997,7 +10999,9 @@ vte_terminal_paint_cursor(VteTerminal *terminal)
                     rect.y = y;
                     rect.height = height;
                     rect.width = cursor_width;
-                    vte_terminal_render_sciptable_cursor(terminal, ++t, rect);
+                    delay = vte_terminal_render_sciptable_cursor(terminal, ++t, rect);
+                    terminal->pvt->cursor_blink_timeout = delay;
+                    terminal->pvt->cursor_blink_cycle = delay / 2;
                 } else {
 				/* just reverse the character under the cursor */
 				vte_terminal_fill_rectangle (terminal,

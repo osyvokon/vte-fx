@@ -1334,7 +1334,8 @@ static int Canvas_rectangle(lua_State *L)
     double h     = luaL_checknumber(L, 5);
 
     // Do the work
-    cairo_rectangle(c, x, y, x + w, y + h);
+    //cairo_rectangle(c, x, y, x + w, y + h);
+	cairo_rectangle(c, x+VTE_LINE_WIDTH/2., y+VTE_LINE_WIDTH/2., w-VTE_LINE_WIDTH, h-VTE_LINE_WIDTH);
     cairo_stroke(c);
     return 0;
 }
