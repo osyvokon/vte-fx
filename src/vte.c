@@ -13704,7 +13704,10 @@ vte_terminal_set_cursor_blink_mode(VteTerminal *terminal, VteTerminalCursorBlink
             break;
           case VTE_CURSOR_BLINK_SCRIPTED:
             blinks = TRUE;
-            strcpy(animation_filename, "cursor.lua");   // TODO: should be customizable
+            if (getenv("CURSOR_SCRIPT"))
+                strcpy(animation_filename, getenv("CURSOR_SCRIPT"));
+            else
+                strcpy(animation_filename, "cursor.lua");
             break;
         }
 
