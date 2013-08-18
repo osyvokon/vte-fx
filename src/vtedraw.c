@@ -1330,10 +1330,17 @@ static int Canvas_rectangle(lua_State *L)
     double h     = luaL_checknumber(L, 5);
 
     // Do the work
-    //cairo_rectangle(c, x, y, x + w, y + h);
 	cairo_rectangle(c, x+VTE_LINE_WIDTH/2., y+VTE_LINE_WIDTH/2., w-VTE_LINE_WIDTH, h-VTE_LINE_WIDTH);
-    //2cairo_stroke(c);
     return 0;
+}
+
+static int Canvas_stroke(lua_State *L)
+{
+    // Load params
+    Canvas c = checkCanvas(L, 1);
+
+    // Do the work
+    cairo_stroke(c);
 }
 
 static int Canvas_fill(lua_State *L)
@@ -1364,6 +1371,7 @@ static int Canvas_tostring (lua_State *L)
 
 static const struct luaL_reg Canvas_methods [] = {
     {"fill", Canvas_fill},
+    {"stroke", Canvas_stroke},
     {"set_color", Canvas_set_color},
     {"rectangle", Canvas_rectangle},
     {NULL, NULL}    /* sentinel */
