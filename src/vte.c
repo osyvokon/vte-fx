@@ -465,9 +465,6 @@ _vte_invalidate_cells(VteTerminal *terminal,
 			"Invalidating pixels at (%d,%d)x(%d,%d).\n",
 			rect.x, rect.y, rect.width, rect.height);
 
-    static int t = 0;
-    vte_terminal_render_sciptable_cursor(terminal, ++t, rect);
-
 	if (terminal->pvt->active != NULL) {
 		terminal->pvt->update_regions = g_slist_prepend (
 				terminal->pvt->update_regions,
@@ -9331,7 +9328,6 @@ vte_terminal_draw_rectangle(VteTerminal *terminal,
 			    gint width,
 			    gint height)
 {
-    printf ("rect: %d\n",   _vte_draw_get_context ( terminal->pvt->draw ) );
 	_vte_draw_draw_rectangle(terminal->pvt->draw,
 				 x + terminal->pvt->inner_border.left,
                                  y + terminal->pvt->inner_border.top,
@@ -9345,10 +9341,7 @@ vte_terminal_render_sciptable_cursor(VteTerminal *terminal,
                 guint t,
                 VteRegionRectangle rect)
 {
-
-    printf ("script: %d\n",   _vte_draw_get_context ( terminal->pvt->draw ) );
-    //assert (  _vte_draw_get_context ( terminal->pvt->draw ) != 0);
-    return;
+    assert (  _vte_draw_get_context ( terminal->pvt->draw ) != 0);
     lua_State *L = terminal->pvt->cursor_animation_lua;
     return _vte_draw_render_scriptable_cursor(terminal->pvt->draw, L,
                                         t, rect.x, rect.y, rect.height, rect.width);
@@ -10916,7 +10909,8 @@ vte_terminal_paint_cursor(VteTerminal *terminal)
 	long width, height, delta, cursor_width;
 	guint fore, back;
 	int x, y;
-	gboolean blink, selected, focus;
+	gboolean blink, selected, focus, rendered;
+    static int t = 0;
 
 	if (!terminal->pvt->cursor_visible)
 		return;
@@ -10935,6 +10929,7 @@ vte_terminal_paint_cursor(VteTerminal *terminal)
 
 	focus = terminal->pvt->has_focus;
 	blink = terminal->pvt->cursor_blink_state;
+    rendered = terminal->pvt->cursor_blink_mode == VTE_CURSOR_BLINK_SCRIPTED; 
 
 	if (focus && !blink)
 		return;
@@ -10996,6 +10991,14 @@ vte_terminal_paint_cursor(VteTerminal *terminal)
 		case VTE_CURSOR_SHAPE_BLOCK:
 
 			if (focus) {
+                if (rendered) {
+                    VteRegionRectangle rect;
+                    rect.x = x;
+                    rect.y = y;
+                    rect.height = height;
+                    rect.width = cursor_width;
+                    vte_terminal_render_sciptable_cursor(terminal, ++t, rect);
+                } else {
 				/* just reverse the character under the cursor */
 				vte_terminal_fill_rectangle (terminal,
 							     &terminal->pvt->palette[back],
@@ -11035,7 +11038,7 @@ vte_terminal_paint_cursor(VteTerminal *terminal)
 								height);
 					}
 				}
-
+                }
 			} else {
 				/* draw a box around the character */
 
