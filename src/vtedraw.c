@@ -1334,6 +1334,18 @@ static int Canvas_rectangle(lua_State *L)
     return 0;
 }
 
+static int Canvas_circle(lua_State *L)
+{
+    // Load params
+    Canvas c = checkCanvas(L, 1);
+    double x     = luaL_checknumber(L, 2);
+    double y     = luaL_checknumber(L, 3);
+    double r     = luaL_checknumber(L, 4);
+
+    // Do the work
+    cairo_arc (c, x, y, r, 0, 2*M_PI);
+}
+
 static int Canvas_stroke(lua_State *L)
 {
     // Load params
@@ -1354,11 +1366,7 @@ static int Canvas_fill(lua_State *L)
 
 static int Canvas_gc (lua_State *L)
 {
-    /*
-    Image im = toImage(L, 1);
-    if (im) gdImageDestroy(im);
-    printf("goodbye Image (%p)\n", lua_touserdata(L, 1));
-    */
+    // TODO
     return 0;
 }
 
@@ -1374,6 +1382,7 @@ static const struct luaL_reg Canvas_methods [] = {
     {"stroke", Canvas_stroke},
     {"set_color", Canvas_set_color},
     {"rectangle", Canvas_rectangle},
+    {"circle", Canvas_circle},
     {NULL, NULL}    /* sentinel */
 };
 
