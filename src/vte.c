@@ -28,6 +28,7 @@
 #include <config.h>
 
 #include <math.h>
+#include <assert.h>     # TODO remove this
 
 #include "vte.h"
 #include "vte-private.h"
@@ -149,7 +150,6 @@ static void vte_terminal_set_font_full_internal(VteTerminal *terminal,
                                                 const PangoFontDescription *font_desc,
                                                 VteTerminalAntiAlias antialias);
 static void _vte_check_cursor_blink(VteTerminal *terminal);
-static lua_State * _vte_load_lua_script(const char *filename);
 static void vte_terminal_render_sciptable_cursor(VteTerminal *terminal,
                                                  guint t,
                                                  VteRegionRectangle rect);
@@ -5103,25 +5103,6 @@ _vte_check_cursor_blink(VteTerminal *terminal)
 		remove_cursor_timeout(terminal);
 }
 
-/* Initialize Lua interpreter with script loaded from `filename`. */
-static lua_State *
-_vte_load_lua_script(const char *filename)
-{
-    lua_State *L;
-    int status;
-    L = luaL_newstate();
-    luaL_openlibs(L); /* Load Lua libraries */
-    status = luaL_loadfile(L, filename);
-
-    if (status) {
-        fprintf(stderr, "Couldn't load file: %s\n", lua_tostring(L, -1));
-        exit(1);
-    }
-    lua_pcall(L, 0, 0, 0);
-
-    return L;
-}
-
 void
 _vte_terminal_audible_beep(VteTerminal *terminal)
 {
@@ -9350,6 +9331,7 @@ vte_terminal_draw_rectangle(VteTerminal *terminal,
 			    gint width,
 			    gint height)
 {
+    printf ("rect: %d\n",   _vte_draw_get_context ( terminal->pvt->draw ) );
 	_vte_draw_draw_rectangle(terminal->pvt->draw,
 				 x + terminal->pvt->inner_border.left,
                                  y + terminal->pvt->inner_border.top,
@@ -9363,20 +9345,13 @@ vte_terminal_render_sciptable_cursor(VteTerminal *terminal,
                 guint t,
                 VteRegionRectangle rect)
 {
-    cairo_t *cr = _vte_draw_get_context (terminal->pvt->draw);
-    lua_State *L = terminal->pvt->cursor_animation_lua;
-    lua_getglobal(L, "render");
-    //Canvas_push(L, c);
-    lua_pushinteger(L, t);
-    lua_pushinteger(L, rect.x);
-    lua_pushinteger(L, rect.y);
-    lua_pushinteger(L, rect.width);
-    lua_pushinteger(L, rect.height);
-    lua_call(L, 5, 1);
-    int res = lua_tonumber(L, -1);  // Returned value
-    lua_pop(L, 1);  /* Take the returned value out of the stack */
 
-    return res;
+    printf ("script: %d\n",   _vte_draw_get_context ( terminal->pvt->draw ) );
+    //assert (  _vte_draw_get_context ( terminal->pvt->draw ) != 0);
+    return;
+    lua_State *L = terminal->pvt->cursor_animation_lua;
+    return _vte_draw_render_scriptable_cursor(terminal->pvt->draw, L,
+                                        t, rect.x, rect.y, rect.height, rect.width);
 }
 
 /* Draw the graphic representation of a line-drawing or special graphics

@@ -30,6 +30,7 @@
 #include "vteunistr.h"
 #include "vte-gtk-compat.h"
 
+
 G_BEGIN_DECLS
 
 #define VTE_DRAW_SINGLE_WIDE_CHARACTERS	\
@@ -55,6 +56,7 @@ G_BEGIN_DECLS
 #define VTE_DRAW_ITALIC 2
 
 struct _vte_draw;
+struct lua_State;
 
 /* A request to draw a particular character spanning a given number of columns
    at the given location.  Unlike most APIs, (x,y) specifies the top-left
@@ -122,6 +124,16 @@ void _vte_draw_draw_rectangle(struct _vte_draw *draw,
 void _vte_draw_set_source_color_alpha (struct _vte_draw *draw,
                                        const PangoColor *color,
                                        guchar            alpha);
+
+int
+ _vte_draw_render_scriptable_cursor(struct _vte_draw *draw,
+                struct lua_State *L,
+                guint t,
+                gint x,
+                gint y,
+                gint height,
+                gint wigth);
+struct lua_State * _vte_load_lua_script(const char *filename);
 
 G_END_DECLS
 

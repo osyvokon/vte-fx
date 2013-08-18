@@ -21,8 +21,12 @@
 
 #include <sys/param.h>
 #include <string.h>
+#include <assert.h>
 #include <gtk/gtk.h>
 #include <glib.h>
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
 #include "debug.h"
 #include "vtebg.h"
 #include "vtedraw.h"
@@ -1225,4 +1229,215 @@ _vte_draw_fill_rectangle (struct _vte_draw *draw,
 	cairo_rectangle (draw->cr, x, y, width, height);
 	_vte_draw_set_source_color_alpha (draw, color, alpha);
 	cairo_fill (draw->cr);
+}
+
+
+
+/*
+ * Lua bindings to the cairo subset.
+ *
+ */
+
+typedef cairo_t *Canvas;
+
+static void stackDump (lua_State *L) {
+    int i;
+    int top = lua_gettop(L);
+    for (i = 1; i <= top; i++) {  /* repeat for each level */
+        int t = lua_type(L, i);
+        switch (t) {
+
+            case LUA_TSTRING:  /* strings */
+                printf("`%s'", lua_tostring(L, i));
+                break;
+
+            case LUA_TBOOLEAN:  /* booleans */
+                printf(lua_toboolean(L, i) ? "true" : "false");
+                break;
+
+            case LUA_TNUMBER:  /* numbers */
+                printf("%g", lua_tonumber(L, i));
+                break;
+
+            default:  /* other values */
+                printf("%s", lua_typename(L, t));
+                break;
+
+        }
+        printf("  ");  /* put a separator */
+    }
+    printf("\n");  /* end the listing */
+}
+
+
+/* Ensures that a userdata on the stack is the correct type, and
+ * returns the Canvas pointer inside the userdata. */
+static Canvas checkCanvas (struct lua_State *L, int index)
+{
+    Canvas *pi, im;
+    luaL_checktype(L, index, LUA_TUSERDATA);
+    pi = (Canvas*)luaL_checkudata(L, index, "Canvas");
+    if (pi == NULL) luaL_typerror(L, index, "Canvas");
+    im = *pi;
+    if (!im) {
+        stackDump(L);
+        luaL_error(L, "null Canvas");
+    }
+    return im;
+}
+
+static Canvas *Canvas_push(lua_State *L, Canvas c)
+{
+    printf("Canvas_push\n");
+    assert (c != 0);
+    Canvas *canvas = (Canvas *) lua_newuserdata(L, sizeof(Canvas));
+    *canvas = c;
+    luaL_getmetatable(L, "Canvas");
+    lua_setmetatable(L, -2);
+
+    checkCanvas(L, -1);
+    printf("OK\n");
+    return canvas;
+}
+
+/** Sets current color. Example usage on Lua side:
+ *
+ *  c:set_color(c, r, g, b, a)
+ *
+ */
+static int Canvas_set_color(lua_State *L)
+{
+    // Load params
+    Canvas c = checkCanvas(L, 1);
+    double r     = luaL_checknumber(L, 2);
+    double g     = luaL_checknumber(L, 3);
+    double b     = luaL_checknumber(L, 4);
+    double a     = luaL_checknumber(L, 5);
+
+    // Do the work
+    cairo_set_source_rgba (c, r, g, b, a);
+    return 0;
+}
+
+/** Draws rectangle.  Signature:
+ *
+ *  c:rectangle(c, x, y, w, h)
+ *
+ */
+static int Canvas_rectangle(lua_State *L)
+{
+    // Load params
+    Canvas c = checkCanvas(L, 1);
+    double x     = luaL_checknumber(L, 2);
+    double y     = luaL_checknumber(L, 3);
+    double w     = luaL_checknumber(L, 4);
+    double h     = luaL_checknumber(L, 5);
+
+    // Do the work
+    cairo_rectangle(c, x, y, x + w, y + h);
+    cairo_stroke(c);
+    return 0;
+}
+
+static int Canvas_fill(lua_State *L)
+{
+    return 0;
+}
+
+static int Canvas_gc (lua_State *L)
+{
+    /*
+    Image im = toImage(L, 1);
+    if (im) gdImageDestroy(im);
+    printf("goodbye Image (%p)\n", lua_touserdata(L, 1));
+    */
+    return 0;
+}
+
+static int Canvas_tostring (lua_State *L)
+{
+    lua_pushfstring(L, "Canvas: %p", lua_touserdata(L, 1));
+    return 1;
+}
+
+
+static const struct luaL_reg Canvas_methods [] = {
+    {"fill", Canvas_fill},
+    {"set_color", Canvas_set_color},
+    {"rectangle", Canvas_rectangle},
+    {NULL, NULL}    /* sentinel */
+};
+
+static const struct luaL_reg Canvas_meta [] = {
+    {"__gc",       Canvas_gc},
+    {"__tostring", Canvas_tostring},
+    {NULL, NULL}    /* sentinel */
+};
+
+int Canvas_register(lua_State *L)
+{
+    printf("Canvas_register\n");
+    luaL_openlib(L, "Canvas", Canvas_methods, 0);
+    luaL_newmetatable(L, "Canvas");
+
+    luaL_openlib(L, 0, Canvas_meta, 0);  /* fill metatable */
+    lua_pushliteral(L, "__index");
+    lua_pushvalue(L, -3);               /* dup methods table*/
+    lua_rawset(L, -3);                  /* metatable.__index = methods */
+    lua_pushliteral(L, "__metatable");
+    lua_pushvalue(L, -3);               /* dup methods table*/
+    lua_rawset(L, -3);                  /* hide metatable:
+                                           metatable.__metatable = methods */
+    lua_pop(L, 1);                      /* drop metatable */
+
+    return 1;
+}
+
+
+int
+ _vte_draw_render_scriptable_cursor(struct _vte_draw *draw,
+                lua_State *L,
+                guint t,
+                gint x,
+                gint y,
+                gint height,
+                gint width)
+{
+    if (!draw->cr){
+        printf("skipping empty canvas\n");
+        return;
+    }
+    lua_getglobal(L, "render");
+    Canvas_push(L, draw->cr);
+    lua_pushinteger(L, t);
+    lua_pushinteger(L, x);
+    lua_pushinteger(L, y);
+    lua_pushinteger(L, width);
+    lua_pushinteger(L, height);
+    lua_call(L, 6, 1);
+    int res = lua_tonumber(L, -1);  // Returned value
+    lua_pop(L, 1);  /* Take the returned value out of the stack */
+
+    return res;
+}
+
+/* Initialize Lua interpreter with script loaded from `filename`. */
+struct lua_State *
+_vte_load_lua_script(const char *filename)
+{
+    lua_State *L;
+    int status;
+    L = luaL_newstate();
+    luaL_openlibs(L); /* Load Lua libraries */
+    status = luaL_loadfile(L, filename);
+
+    if (status) {
+        fprintf(stderr, "Couldn't load file: %s\n", lua_tostring(L, -1));
+        exit(1);
+    }
+    lua_pcall(L, 0, 0, 0);
+
+    Canvas_register(L);
+
+    return L;
 }
