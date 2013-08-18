@@ -1288,15 +1288,11 @@ static Canvas checkCanvas (struct lua_State *L, int index)
 
 static Canvas *Canvas_push(lua_State *L, Canvas c)
 {
-    printf("Canvas_push\n");
     assert (c != 0);
     Canvas *canvas = (Canvas *) lua_newuserdata(L, sizeof(Canvas));
     *canvas = c;
     luaL_getmetatable(L, "Canvas");
     lua_setmetatable(L, -2);
-
-    checkCanvas(L, -1);
-    printf("OK\n");
     return canvas;
 }
 
@@ -1336,13 +1332,17 @@ static int Canvas_rectangle(lua_State *L)
     // Do the work
     //cairo_rectangle(c, x, y, x + w, y + h);
 	cairo_rectangle(c, x+VTE_LINE_WIDTH/2., y+VTE_LINE_WIDTH/2., w-VTE_LINE_WIDTH, h-VTE_LINE_WIDTH);
-    cairo_stroke(c);
+    //2cairo_stroke(c);
     return 0;
 }
 
 static int Canvas_fill(lua_State *L)
 {
-    return 0;
+    // Load params
+    Canvas c = checkCanvas(L, 1);
+
+    // Do the work
+    cairo_fill(c);
 }
 
 static int Canvas_gc (lua_State *L)
@@ -1377,7 +1377,6 @@ static const struct luaL_reg Canvas_meta [] = {
 
 int Canvas_register(lua_State *L)
 {
-    printf("Canvas_register\n");
     luaL_openlib(L, "Canvas", Canvas_methods, 0);
     luaL_newmetatable(L, "Canvas");
 
