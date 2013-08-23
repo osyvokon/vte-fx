@@ -10999,8 +10999,8 @@ vte_terminal_paint_cursor(VteTerminal *terminal)
                     VteRegionRectangle rect;
                     rect.x = x;
                     rect.y = y;
-                    rect.height = height;
-                    rect.width = cursor_width;
+                    rect.height = height + 2 * VTE_LINE_WIDTH;
+                    rect.width = cursor_width + 2 * VTE_LINE_WIDTH;
                     delay = vte_terminal_render_sciptable_cursor(terminal, ++t, rect);
                     terminal->pvt->cursor_blink_timeout = delay;
                     terminal->pvt->cursor_blink_cycle = delay / 2;
