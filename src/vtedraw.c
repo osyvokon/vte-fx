@@ -1348,6 +1348,33 @@ static int Canvas_circle(lua_State *L)
     cairo_arc (c, x, y, r, 0, 2*M_PI);
 }
 
+/** Add gradient color stop point. Call `linear_grad` first! */
+static int Canvas_add_color_stop(lua_State *L)
+{
+    Canvas c = checkCanvas(L, 1);
+    double offset = luaL_checknumber(L, 2);
+    double r      = luaL_checknumber(L, 3);
+    double g      = luaL_checknumber(L, 4);
+    double b      = luaL_checknumber(L, 5);
+    double a      = luaL_checknumber(L, 6);
+
+    cairo_pattern_t *pattern = cairo_get_source(c);
+    cairo_pattern_add_color_stop_rgba(pattern, offset, r, g, b, a);
+}
+
+/** Creates linear gradient. */
+static int Canvas_linear_gradient(lua_State *L)
+{
+    Canvas c = checkCanvas(L, 1);
+    double x0    = luaL_checknumber(L, 2);
+    double y0    = luaL_checknumber(L, 3);
+    double x1    = luaL_checknumber(L, 4);
+    double y1    = luaL_checknumber(L, 5);
+
+    cairo_pattern_t *pattern = cairo_pattern_create_linear(x0, y0, x1, y1);
+	cairo_set_source(c, pattern);
+}
+
 static int Canvas_stroke(lua_State *L)
 {
     // Load params
@@ -1385,6 +1412,8 @@ static const struct luaL_reg Canvas_methods [] = {
     {"set_color", Canvas_set_color},
     {"rectangle", Canvas_rectangle},
     {"circle", Canvas_circle},
+    {"linear_grad", Canvas_linear_gradient},
+    {"add_color_stop", Canvas_add_color_stop},
     {NULL, NULL}    /* sentinel */
 };
 
