@@ -1,27 +1,13 @@
 -- smooth blinking
-function render (Canvas, t, x, y, w, h)
-    local stage = (t % 200);
-    local k = (t % 100) / 100;
-    local r, g, b
-    local c = Canvas
+freq = 0.1;
+color = {0, 0.8, 0.3, 0.7};
 
-    if stage < 100 then
-        r = 0
-        g = 0.8 - k* k ;
-        b = 0
-    else
-        r = 0
-        g = k * k - 0.8;
-        b = 0
-    end
+function render (c, t, x, y, w, h)
+    local k = (math.sin(t * freq) + 1) / 2;
 
-    c:set_color(1, 1, 1, 0)
+    c:set_color(color[1]*k, color[2]*k, color[3]*k, color[4])
     c:rectangle(x, y, w, h)
     c:fill()
 
-    c:set_color(0, 0.8, 0.3, g)
-    c:rectangle(x, y, w, h)
-    c:fill()
-
-    return 20
+    return 60;
 end
