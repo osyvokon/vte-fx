@@ -8452,6 +8452,7 @@ vte_terminal_init(VteTerminal *terminal)
 	/* Cursor blinking. */
 	pvt->cursor_visible = TRUE;
 	pvt->cursor_blink_timeout = 500;
+        pvt->cursor_animation_lua = NULL;
         pvt->cursor_blinks = FALSE;
         pvt->cursor_blink_mode = VTE_CURSOR_BLINK_SYSTEM;
 
@@ -9346,6 +9347,9 @@ vte_terminal_render_sciptable_cursor(VteTerminal *terminal,
 {
     assert (  _vte_draw_get_context ( terminal->pvt->draw ) != 0);
     lua_State *L = terminal->pvt->cursor_animation_lua;
+    if (G_UNLIKELY(L == NULL)) // Script is not loaded yet
+        return 100;
+
     return _vte_draw_render_scriptable_cursor(terminal->pvt->draw, L,
                                         t, rect.x, rect.y, rect.height, rect.width);
 }
@@ -13646,17 +13650,15 @@ vte_terminal_set_cursor_blinks_internal(VteTerminal *terminal, gboolean blink, c
 {
         VteTerminalPrivate *pvt = terminal->pvt;
 
+    if (strcmp(animation_filename, "")) 
+        pvt->cursor_animation_lua = _vte_load_lua_script(animation_filename);
+
 	blink = !!blink;
 	if (pvt->cursor_blinks == blink)
 		return;
 
 	pvt->cursor_blinks = blink;
     pvt->cursor_animation_filename = strdup(animation_filename);     // FIXME : small memory leak
-
-    if (strcmp(animation_filename, "") ) {
-        printf("About to Load script: %s \n", animation_filename);
-        pvt->cursor_animation_lua = _vte_load_lua_script(animation_filename);
-    }
 
 	_vte_check_cursor_blink (terminal);
 }
