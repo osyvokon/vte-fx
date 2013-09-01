@@ -11004,6 +11004,17 @@ vte_terminal_paint_cursor(VteTerminal *terminal)
                     delay = vte_terminal_render_sciptable_cursor(terminal, ++t, rect);
                     terminal->pvt->cursor_blink_timeout = delay;
                     terminal->pvt->cursor_blink_cycle = delay / 2;
+
+                    // FIXME!
+                    rect.x = 0;
+                    rect.y = 0;
+                    rect.height = 1000;
+                    rect.width = 1000;
+                    terminal->pvt->update_regions = g_slist_prepend (
+                            terminal->pvt->update_regions,
+                            gdk_region_rectangle (&rect));
+                    //add_update_timeout (terminal);
+
                 } else {
 				/* just reverse the character under the cursor */
 				vte_terminal_fill_rectangle (terminal,
