@@ -38,9 +38,9 @@ Following are fairly simple animations, no script is longer than 30 lines.
 Also please keep in mind, that animated GIF are really bad in showing
 gradients.
 
-[!Example 00](/assets/00.gif)
-[!Example 01](/assets/01.gif)
-[!Example 02](/assets/02.gif)
-[!Example 03](/assets/03.gif)
-[!Example 04](/assets/04.gif)
-[!Example 05](/assets/05.gif)
+![Example 00](/assets/00.gif)
+![Example 01](/assets/01.gif)
+![Example 02](/assets/02.gif)
+![Example 03](/assets/03.gif)
+![Example 04](/assets/04.gif)
+![Example 05](/assets/05.gif)
